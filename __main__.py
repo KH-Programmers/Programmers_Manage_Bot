@@ -10,15 +10,17 @@ from discord import (
 
 import os
 import time
+import datetime
 from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from utilities import createLogger
 
 
 load_dotenv(verbose=True)
 
-
-MY_GUILD = Object(id=int(os.getenv('GUILD_ID')))
+MY_GUILD = Object(id=int(os.getenv("GUILD_ID")))
+database = AsyncIOMotorClient(os.getenv("DATABASE_URL"))["HeeKyung"]
 
 state = {}
 
@@ -51,22 +53,33 @@ class HeeKyung(Client):
             return
         if before.channel is None and after.channel is not None:
             state[str(member.id)] = time.time()
-            self.logger.info(f"{member} joined {after.channel}")
         elif before.channel is not None and after.channel is None:
             if state.get(str(member.id)) is None:
                 return
             if time.time() - state[str(member.id)] < 10:
                 del state[str(member.id)]
                 return
+            seconds = int(time.time() - state[str(member.id)])
+            hours = seconds // 3600
+            minutes = seconds // 60
             await self.get_channel(int(os.getenv("WORKING_LOG_CHANNEL_ID"))).send(
                 embed=Embed(
                     title="📔 개발 기록",
-                    description=f"대상 : {member.mention}\n"
-                                f"시간 : {time.localtime(time.time() - state[str(member.id)])}초",
+                    description=f"대상 : {member.mention}\n" f"시간 : {hours}시간 {minutes}분",
+                    color=member.color,
                 )
             )
+            await database["working"].insert_one(
+                {
+                    "user": {
+                        "id": member.id,
+                        "name": str(member),
+                    },
+                    "time": f"{hours}시간 {minutes}분 {seconds - hours * 3600}초",
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
             del state[str(member.id)]
-            self.logger.info(f"{member} left {before.channel}")
 
 
 client = HeeKyung()
