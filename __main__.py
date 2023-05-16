@@ -8,16 +8,17 @@ from discord import (
     app_commands,
 )
 
-import json
+import os
 import time
+from dotenv import load_dotenv
 
 from utilities import createLogger
 
 
-with open(file="config.json", mode="r", encoding="utf-8") as f:
-    config = json.load(f)
+load_dotenv(verbose=True)
 
-MY_GUILD = Object(id=int(config["GUILD_ID"]))
+
+MY_GUILD = Object(id=int(os.getenv('GUILD_ID')))
 
 state = {}
 
@@ -45,7 +46,7 @@ class HeeKyung(Client):
         self, member: Member, before: VoiceState, after: VoiceState
     ):
         if (before.channel or after.channel) != self.get_channel(
-            int(config["WORKING_CHANNEL_ID"])
+            int(os.getenv("WORKING_CHANNEL_ID"))
         ):
             return
         if before.channel is None and after.channel is not None:
@@ -57,7 +58,7 @@ class HeeKyung(Client):
             if time.time() - state[str(member.id)] < 10:
                 del state[str(member.id)]
                 return
-            await self.get_channel(int(config["WORKING_LOG_CHANNEL_ID"])).send(
+            await self.get_channel(int(os.getenv("WORKING_LOG_CHANNEL_ID"))).send(
                 embed=Embed(
                     title="📔 개발 기록",
                     description=f"대상 : {member.mention}\n"
@@ -72,4 +73,4 @@ client = HeeKyung()
 
 
 if __name__ == "__main__":
-    client.run(config["TOKEN"])
+    client.run(os.getenv("TOKEN"))
