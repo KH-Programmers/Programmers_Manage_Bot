@@ -65,6 +65,7 @@ class HeeKyung(Client):
             seconds = int(time.time() - state[str(member.id)])
             hours = seconds // 3600
             minutes = seconds % 3600 // 60
+            minutes -= hours * 60
             await self.get_channel(int(os.getenv("WORKING_LOG_CHANNEL_ID"))).send(
                 embed=Embed(
                     title="📔 개발 기록",
